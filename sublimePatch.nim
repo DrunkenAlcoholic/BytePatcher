@@ -1,14 +1,17 @@
 import std/[os, strutils, strformat, times]
-import checksums/md5
+import checksums/md5 # nimble install checksums 
 
 # ANSI Color Codes
 const
-  bold = "\x1b[1m"
-  reset = "\x1b[0m"
+  bold   = "\x1b[1m"
+  reset  = "\x1b[0m"
   yellow = "\x1b[33m"
-  green = "\x1b[32m"
-  red = "\x1b[31m"
-  blue = "\x1b[34m"   # Added blue color code
+  green  = "\x1b[32m"
+  red    = "\x1b[31m"
+  blue   = "\x1b[34m"
+
+# Path to the binary file to patch
+let FilePath: string = "/opt/sublime_text/sublime_text"
 
 # Define the Patch type
 type
@@ -16,9 +19,6 @@ type
     pattern: seq[byte]  # Byte sequence pattern with possible wildcards
     data: seq[byte]     # Replacement data
     address: int        # Address where the pattern is found (-1 if not found)
-
-# Path to the binary file to patch
-let FilePath: string = "/opt/sublime_text/sublime_text"
 
 # Define the patches
 var Patches: seq[Patch] = @[
@@ -32,10 +32,12 @@ var Patches: seq[Patch] = @[
 
 # MD5 Checksum Function
 proc md5Checksum(filePath: string): string =
-  var ctx: MD5Context
-  var digest: MD5Digest
+  var 
+    ctx: MD5Context
+    digest: MD5Digest
+    buffer: array[1024, byte]
   let file = open(filePath)
-  var buffer: array[1024, byte]
+  
   md5Init(ctx)
   while (let len = readBytes(file, buffer, 0, buffer.len); len > 0):
     md5Update(ctx, buffer[0..len-1])
@@ -55,7 +57,7 @@ proc searchPattern(pTarget, pPattern: openArray[byte], wildcard: byte = 0x00): i
       return i
   return -1
 
-# Apply patches with colorized output and formatted messages
+# Apply patches
 proc applyPatchesWithSearch(filename: string, patches: var seq[Patch], wildcard: byte = 0x00) =
   # Backup File Creation
   let timestamp = now().format("yyyyMMdd-HHmmss")  # Adjusted format to use '-' instead of '_'
@@ -96,8 +98,7 @@ proc applyPatchesWithSearch(filename: string, patches: var seq[Patch], wildcard:
     except IOError as e:
       echo red & "Failed to apply patch: ", e.msg & reset
 
-
-# Main Block with Colorized MD5 Output
+# Main Block
 when isMainModule:
   try:
     echo bold & "MD5 Checksum Before Patching:" & reset, md5Checksum(FilePath)
